@@ -1,0 +1,4 @@
+syncthing
+*.tfstate*
+.terraform*
+terraform.tfvars
