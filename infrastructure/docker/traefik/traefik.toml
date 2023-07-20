@@ -4,17 +4,20 @@ sendAnonymousUsage = false
 
 
 [entryPoints]
-[entryPoints.web]
+[entryPoints.default]
 address = ":80"
 
-[entryPoints.websecure]
-address = ":443"
+# [entryPoints.defaultSecure]
+# address = ":443"
 
-#[entryPoints.syncthing]
-#address = ":22000/udp"
+[entryPoints.syncthingTCP]
+address = ":22000"
 
-#[entryPoints.syncthing2]
-#address = ":21027/udp"
+[entryPoints.syncthingQUIC]
+address = ":22000/udp"
+
+[entryPoints.syncthingDiscover]
+address = ":21027/udp"
 
 
 [log]
@@ -26,6 +29,8 @@ address = ":443"
 #
 # level = "DEBUG"
 
+level = "DEBUG"
+
 # Sets the filepath for the traefik log. If not specified, stdout will be used.
 # Intermediate directories are created if necessary.
 #
@@ -33,6 +38,8 @@ address = ":443"
 # Default: os.Stdout
 #
 # filePath = "log/traefik.log"
+
+filePath = "/var/log/traefik.log"
 
 # Format is either "json" or "common".
 #

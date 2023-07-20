@@ -1,5 +1,5 @@
-resource "docker_container" "traefik" {
-  name  = "${local.project_name}-traefik-${var.environment}"
+resource "docker_container" "reverseproxy" {
+  name  = "${local.project_name}-reverseproxy-${var.environment}"
   image = "traefik:v2.10"
 
   env = [
@@ -16,6 +16,38 @@ resource "docker_container" "traefik" {
     external = 443
   }
 
+  // Port for syncthing
+  ports {
+    protocol = "tcp"
+    internal = local.syncthing.bridge_ports.default
+    external = 22000
+  }
+
+  // Port for syncthing
+  ports {
+    protocol = "udp"
+    internal = local.syncthing.bridge_ports.default
+    external = 22000
+  }
+
+  // Port for syncthing
+  ports {
+    protocol = "udp"
+    internal = local.syncthing.bridge_ports.discover
+    external = 21027
+  }
+
+  networks_advanced {
+    name = "bridge"
+  }
+
+  networks_advanced {
+    name = docker_network.local.name
+    aliases = [
+      "reverseproxy"
+    ]
+  }
+
   mounts {
     target    = "/etc/traefik/traefik.toml"
     source    = var.traefik_config_file
@@ -29,6 +61,11 @@ resource "docker_container" "traefik" {
     type      = "bind"
     read_only = true
   }
+
+  labels {
+    label = "traefik.http.routers.reverseproxy.entrypoints"
+    value = "default,syncthingTCP,syncthingQUIC,syncthingDiscover"
+  }
 }
 
 resource "docker_container" "web" {
@@ -39,10 +76,16 @@ resource "docker_container" "web" {
     "ENVIRONMENT=${var.environment}",
   ]
 
-
   volumes {
     volume_name    = docker_volume.web.name
     container_path = "/usr/share/nginx/html"
+  }
+
+  networks_advanced {
+    name = docker_network.local.name
+    aliases = [
+      "web"
+    ]
   }
 
   ports {
@@ -56,13 +99,13 @@ resource "docker_container" "web" {
   }
 
   labels {
-    label = "traefik.http.routers.static.rule"
+    label = "traefik.http.routers.web.rule"
     value = "Host(`${var.host}`)"
   }
 
   labels {
-    label = "traefik.http.routers.static.entrypoints"
-    value = "web"
+    label = "traefik.docker.network"
+    value = docker_network.local.name
   }
 }
 
@@ -88,15 +131,27 @@ resource "docker_container" "syncthing" {
   }
 
   ports {
+    internal = 22000
+    external = local.syncthing.bridge_ports.default
+  }
+
+  ports {
     protocol = "udp"
     internal = 22000
-    external = 22000
+    external = local.syncthing.bridge_ports.default
   }
 
   ports {
     protocol = "udp"
     internal = 21027
-    external = 21027
+    external = local.syncthing.bridge_ports.discover
+  }
+
+  networks_advanced {
+    name = docker_network.local.name
+    aliases = [
+      "syncthing"
+    ]
   }
 
   labels {
@@ -110,17 +165,7 @@ resource "docker_container" "syncthing" {
   }
 
   labels {
-    label = "traefik.http.routers.syncthing.entrypoints"
-    value = "web"
-  }
-
-  labels {
-    label = "traefik.http.routers.syncthing.entrypoints"
-    value = "syncthing"
-  }
-
-  labels {
-    label = "traefik.http.routers.syncthing.entrypoints"
-    value = "syncthing2"
+    label = "traefik.docker.network"
+    value = docker_network.local.name
   }
 }
