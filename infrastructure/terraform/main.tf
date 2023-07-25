@@ -2,57 +2,67 @@ resource "docker_container" "reverseproxy" {
   name  = "${local.project_name}-reverseproxy-${var.environment}"
   image = "traefik:v2.10"
 
+  hostname = "reverseproxy"
+
   env = [
     "ENVIRONMENT=${var.environment}",
   ]
 
+  command = [
+    // Traefik
+    var.environment != "production" ? "--api.insecure=true" : "--api.insecure=false",
+    "--log.level=DEBUG",
+    "--log.filePath=/var/log/traefik/traefik.log",
+    "--accessLog.filePath=/var/log/traefik/access.log",
+
+    //
+    "--serversTransport.insecureSkipVerify=true",
+
+    //
+    "--certificatesResolvers.letsencrypt.acme.email=${var.email}",
+    "--certificatesResolvers.letsencrypt.acme.storage=/letsencrypt/acme.json",
+    "--certificatesresolvers.letsencrypt.acme.tlsChallenge=true",
+    "--certificatesResolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory",
+
+    // Entrypoints
+    "--entrypoints.http.address=:80",
+    "--entrypoints.httpSecure.address=:443",
+
+    // Syncthing
+    // "--entrypoints.syncthing.address=:8485",
+    // "--entrypoints.syncthingSync.address=:22000",
+    // "--entrypoints.syncthingSyncUDP.address=:22000/udp",
+    // "--entrypoints.syncthingBroadcastUDP.address=:21027/udp",
+
+    // Redirect to https
+    "--entrypoints.http.http.redirections.entrypoint.to=httpSecure",
+    "--entrypoints.http.http.redirections.entrypoint.scheme=https",
+    "--entrypoints.http.http.redirections.entrypoint.permanent=true",
+
+    // Docker
+    "--providers.docker",
+    "--providers.docker.exposedbydefault=false",
+    "--providers.docker.endpoint=unix:///var/run/docker.sock",
+    "--providers.docker.swarmMode=false",
+  ]
+
   ports {
-    internal = 80
     external = 80
+    internal = 80
   }
 
   ports {
-    internal = 443
     external = 443
+    internal = 443
   }
 
-  // Port for syncthing
-  ports {
-    protocol = "tcp"
-    internal = local.syncthing.bridge_ports.default
-    external = 22000
-  }
+  dynamic "ports" {
+    for_each = var.environment == "production" ? {} : { vault_disabled = true }
 
-  // Port for syncthing
-  ports {
-    protocol = "udp"
-    internal = local.syncthing.bridge_ports.default
-    external = 22000
-  }
-
-  // Port for syncthing
-  ports {
-    protocol = "udp"
-    internal = local.syncthing.bridge_ports.discover
-    external = 21027
-  }
-
-  networks_advanced {
-    name = "bridge"
-  }
-
-  networks_advanced {
-    name = docker_network.local.name
-    aliases = [
-      "reverseproxy"
-    ]
-  }
-
-  mounts {
-    target    = "/etc/traefik/traefik.toml"
-    source    = var.traefik_config_file
-    type      = "bind"
-    read_only = true
+    content {
+      external = 8080
+      internal = 8080
+    }
   }
 
   mounts {
@@ -61,10 +71,14 @@ resource "docker_container" "reverseproxy" {
     type      = "bind"
     read_only = true
   }
+  labels {
+    label = "traefik.enable"
+    value = var.environment != "production" ? true : false
+  }
 
   labels {
     label = "traefik.http.routers.reverseproxy.entrypoints"
-    value = "default,syncthingTCP,syncthingQUIC,syncthingDiscover"
+    value = "http,httpSecure"
   }
 }
 
@@ -72,25 +86,41 @@ resource "docker_container" "web" {
   name  = "${local.project_name}-web-${var.environment}"
   image = "nginx:1.25.1-alpine"
 
+  hostname = "web"
+
   env = [
     "ENVIRONMENT=${var.environment}",
   ]
 
+  ports {
+    external = 444
+    internal = 443
+  }
+
+  mounts {
+    target    = "/etc/nginx/conf.d/default.conf"
+    source    = var.web_config
+    type      = "bind"
+    read_only = true
+  }
+
+  mounts {
+    target    = "/etc/ssl/certs/cert.pem"
+    source    = var.web_cert_file
+    type      = "bind"
+    read_only = true
+  }
+
+  mounts {
+    target    = "/etc/ssl/certs/cert.key.pem"
+    source    = var.web_cert_key_file
+    type      = "bind"
+    read_only = true
+  }
+
   volumes {
     volume_name    = docker_volume.web.name
-    container_path = "/usr/share/nginx/html"
-  }
-
-  networks_advanced {
-    name = docker_network.local.name
-    aliases = [
-      "web"
-    ]
-  }
-
-  ports {
-    internal = 80
-    external = 3000
+    container_path = "/web"
   }
 
   labels {
@@ -104,14 +134,31 @@ resource "docker_container" "web" {
   }
 
   labels {
-    label = "traefik.docker.network"
-    value = docker_network.local.name
+    label = "traefik.http.routers.web.tls"
+    value = true
+  }
+
+  labels {
+    label = "traefik.http.services.web.loadbalancer.server.port"
+    value = "443"
+  }
+
+  labels {
+    label = "traefik.http.services.web.loadbalancer.server.scheme"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.web.entrypoints"
+    value = "httpSecure"
   }
 }
 
+/*
 resource "docker_container" "syncthing" {
-  name     = "${local.project_name}-syncthing-${var.environment}"
-  image    = "syncthing/syncthing:1.23"
+  name  = "${local.project_name}-syncthing-${var.environment}"
+  image = "syncthing/syncthing:1.23"
+
   hostname = "syncthing"
 
   env = [
@@ -121,8 +168,8 @@ resource "docker_container" "syncthing" {
   ]
 
   volumes {
-    container_path = "/var/syncthing"
     volume_name    = docker_volume.syncthing.name
+    container_path = "/var/syncthing"
   }
 
   ports {
@@ -132,26 +179,19 @@ resource "docker_container" "syncthing" {
 
   ports {
     internal = 22000
-    external = local.syncthing.bridge_ports.default
+    external = 22000
   }
 
   ports {
     protocol = "udp"
     internal = 22000
-    external = local.syncthing.bridge_ports.default
+    external = 22000
   }
 
   ports {
     protocol = "udp"
     internal = 21027
-    external = local.syncthing.bridge_ports.discover
-  }
-
-  networks_advanced {
-    name = docker_network.local.name
-    aliases = [
-      "syncthing"
-    ]
+    external = 21027
   }
 
   labels {
@@ -165,7 +205,23 @@ resource "docker_container" "syncthing" {
   }
 
   labels {
-    label = "traefik.docker.network"
-    value = docker_network.local.name
+    label = "traefik.http.routers.syncthing.tls"
+    value = true
+  }
+
+  labels {
+    label = "traefik.http.services.syncthing.loadbalancer.server.port"
+    value = "8384"
+  }
+
+  labels {
+    label = "traefik.http.services.syncthing.loadbalancer.server.scheme"
+    value = "https"
+  }
+
+  labels {
+    label = "traefik.http.routers.syncthing.entrypoints"
+    value = "httpSecure,syncthing"
   }
 }
+*/

@@ -2,3 +2,5 @@ syncthing
 *.tfstate*
 .terraform*
 terraform.tfvars
+logs
+certs
