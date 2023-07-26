@@ -17,7 +17,6 @@ resource "docker_container" "web" {
     target    = "/etc/nginx/conf.d/default.conf"
     source    = "${path.cwd}/infrastructure/docker/web/default.conf"
     type      = "bind"
-    read_only = true
   }
 
   volumes {
