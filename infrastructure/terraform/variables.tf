@@ -9,52 +9,12 @@ variable "host" {
   description = "The host"
 }
 
-variable "email" {
-  type = string
-  description = "The letsencrypt email"
-}
-
-variable "web_content" {
+variable "dashboardBasicAuth" {
   type        = string
-  description = "The web content"
+  description = "The user and hashed password for the dashboard"
 }
 
-variable "web_config" {
-  type = string
-  description = "The web config"
-}
-
-variable "web_cert_file" {
-  type = string
-  description = "The cert file"
-}
-
-variable "web_cert_key_file" {
-  type = string
-  description = "The cert key file"
-}
-
-variable "certs_config_path" {
-  type = string
-  description = "The certs configuration file"
-}
-
-variable "certs_path" {
-  type = string
-  description = "The certs file"
-}
-
-variable "traefik_config_file" {
+variable "debugLevel" {
   type        = string
-  description = "The configuration file for traefik"
-}
-
-variable "syncthing_shared_path" {
-  type        = string
-  description = "The syncthing to store de shared data"
-}
-
-variable "syncthing_config" {
-  type = string
-  description = "The path to the syncthing configuration"
+  description = "The debug level for the reverse proxy"
 }
