@@ -20,7 +20,7 @@ variable "traefikDashboardBasicAuth" {
 }
 
 variable "webCertsPath" {
-  type = string
+  type        = string
   description = "The path to the web certs"
 }
 

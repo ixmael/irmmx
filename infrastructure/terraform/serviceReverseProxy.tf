@@ -10,8 +10,8 @@ resource "docker_container" "reverseproxy" {
     "--api.insecure=false",
 
     "--log.level=${var.traefikDebugLevel}",
-    "--log.filePath=/var/log/traefik/traefik.log",
-    "--accessLog.filePath=/var/log/traefik/access.log",
+    "--log.filePath=/var/log/reverseproxy/reverseproxy.log",
+    "--accessLog.filePath=/var/log/reverseproxy/access.log",
 
 
     // Allow to use https within internal services
@@ -51,7 +51,7 @@ resource "docker_container" "reverseproxy" {
 
   volumes {
     volume_name    = docker_volume.reverseproxy_logs.name
-    container_path = "/var/log/traefik"
+    container_path = "/var/log/reverseproxy"
   }
 
   labels {

@@ -2,7 +2,7 @@ resource "docker_volume" "reverseproxy_logs" {
   name = "${local.project_name}-reverseproxyLogs-${var.environment}"
   driver_opts = {
     type   = "none"
-    device = "${path.cwd}/logs/traefik"
+    device = "${path.cwd}/logs/reverseproxy"
     o      = "bind"
   }
 }
