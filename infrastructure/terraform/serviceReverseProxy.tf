@@ -2,6 +2,10 @@ resource "docker_container" "reverseproxy" {
   name  = "${local.project_name}-reverseproxy-${var.environment}"
   image = "traefik:v2.10"
 
+  security_opts = [
+    "no-new-privileges=true"
+  ]
+
   env = [
     "ENVIRONMENT=${var.environment}",
   ]
@@ -91,6 +95,6 @@ resource "docker_container" "reverseproxy" {
 
   labels {
     label = "traefik.http.middlewares.dashboardAuth.basicauth.users"
-    value = "${var.traefikDashboardBasicAuth}"
+    value = var.traefikDashboardBasicAuth
   }
 }

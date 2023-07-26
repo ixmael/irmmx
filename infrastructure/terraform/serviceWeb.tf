@@ -22,7 +22,7 @@ resource "docker_container" "web" {
 
   volumes {
     volume_name    = docker_volume.web_logs.name
-    container_path = "/var/log/nginx"
+    container_path = "/var/log/web"
   }
 
   volumes {
