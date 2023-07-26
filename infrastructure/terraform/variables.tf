@@ -9,12 +9,22 @@ variable "host" {
   description = "The host"
 }
 
-variable "dashboardBasicAuth" {
+variable "traefikDebugLevel" {
+  type        = string
+  description = "The debug level for the reverse proxy"
+}
+
+variable "traefikDashboardBasicAuth" {
   type        = string
   description = "The user and hashed password for the dashboard"
 }
 
-variable "debugLevel" {
+variable "webCertsPath" {
+  type = string
+  description = "The path to the web certs"
+}
+
+variable "webContentPath" {
   type        = string
-  description = "The debug level for the reverse proxy"
+  description = "The path to the web content"
 }

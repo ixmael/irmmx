@@ -9,7 +9,10 @@ resource "docker_container" "reverseproxy" {
   command = [
     "--api.insecure=false",
 
-    "--log.level=${var.debugLevel}",
+    "--log.level=${var.traefikDebugLevel}",
+    "--log.filePath=/var/log/traefik/traefik.log",
+    "--accessLog.filePath=/var/log/traefik/access.log",
+
 
     // Allow to use https within internal services
     "--serversTransport.insecureSkipVerify=true",
@@ -44,6 +47,11 @@ resource "docker_container" "reverseproxy" {
     source    = "/var/run/docker.sock"
     type      = "bind"
     read_only = true
+  }
+
+  volumes {
+    volume_name    = docker_volume.reverseproxy_logs.name
+    container_path = "/var/log/traefik"
   }
 
   labels {
@@ -83,6 +91,6 @@ resource "docker_container" "reverseproxy" {
 
   labels {
     label = "traefik.http.middlewares.dashboardAuth.basicauth.users"
-    value = "${var.dashboardBasicAuth}"
+    value = "${var.traefikDashboardBasicAuth}"
   }
 }
