@@ -34,6 +34,13 @@ resource "docker_container" "web" {
     container_path = "/web"
   }
 
+  networks_advanced {
+    name = docker_network.services.name
+    aliases = [
+      "web"
+    ]
+  }
+
   labels {
     label = "traefik.enable"
     value = true

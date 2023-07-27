@@ -33,6 +33,7 @@ resource "docker_container" "reverseproxy" {
     "--providers.docker",
     "--providers.docker.exposedbydefault=false",
     "--providers.docker.endpoint=unix:///var/run/docker.sock",
+    "--providers.docker.network=${docker_network.services.name}",
     "--providers.docker.swarmMode=false",
   ]
 
@@ -56,6 +57,17 @@ resource "docker_container" "reverseproxy" {
   volumes {
     volume_name    = docker_volume.reverseproxy_logs.name
     container_path = "/var/log/reverseproxy"
+  }
+
+  networks_advanced {
+    name = "bridge"
+  }
+
+  networks_advanced {
+    name = docker_network.services.name
+    aliases = [
+      "reverseproxy"
+    ]
   }
 
   labels {
