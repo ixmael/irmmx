@@ -3,6 +3,8 @@ resource "docker_container" "syncthing" {
   image    = "syncthing/syncthing:1.23"
   hostname = "syncthing"
 
+  restart = "unless-stopped"
+
   env = [
     "ENVIRONMENT=${var.environment}",
     "PUID=1000",
