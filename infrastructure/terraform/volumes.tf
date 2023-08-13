@@ -6,3 +6,12 @@ resource "docker_volume" "syncthing" {
     o      = "bind"
   }
 }
+
+resource "docker_volume" "gogs" {
+  name = "gogs"
+  driver_opts = {
+    type   = "none"
+    device = var.gogs_data
+    o      = "bind"
+  }
+}
