@@ -15,3 +15,21 @@ resource "docker_volume" "gogs" {
     o      = "bind"
   }
 }
+
+resource "docker_volume" "vikunja" {
+  name = "vikunja"
+  driver_opts = {
+    type   = "none"
+    device = var.vikunja_database
+    o      = "bind"
+  }
+}
+
+resource "docker_volume" "vikunja_files" {
+  name = "vikunja_files"
+  driver_opts = {
+    type   = "none"
+    device = var.vikunja_files
+    o      = "bind"
+  }
+}

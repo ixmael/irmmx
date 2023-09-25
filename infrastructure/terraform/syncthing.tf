@@ -18,24 +18,24 @@ resource "docker_container" "syncthing" {
 
   ports {
     internal = 8384
-    external = 8384
+    external = 8385
   }
 
   ports {
     internal = 22000
-    external = 22000
+    external = 22001
   }
 
   ports {
     protocol = "udp"
     internal = 22000
-    external = 22000
+    external = 22001
   }
 
   ports {
     protocol = "udp"
     internal = 21027
-    external = 21027
+    external = 21028
   }
 
   networks_advanced {
