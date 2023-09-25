@@ -1,3 +1,4 @@
+// Git selfhosted
 resource "docker_container" "gogs" {
   name = "${local.project_name}-gogs-${var.environment}"
   image    = "gogs/gogs"
